@@ -1,40 +1,34 @@
 import fetch from 'node-fetch';
 
 export default async function handler(req, res) {
+  console.log("Lead endpoint triggered with body:", req.body);
+
   const { name, email, interest, summary } = req.body;
-
   try {
-    // 1. Send to Google Sheets webhook
-    const webhookUrl = process.env.LEADS_SHEET_WEBHOOK_URL;
-
-    const sheetsRes = await fetch(webhookUrl, {
+    // Log to Sheets
+    console.log("Sending to Sheets webhook...");
+    const sheetsRes = await fetch(process.env.LEADS_SHEET_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, interest, summary })
     });
+    const sheetsText = await sheetsRes.text();
+    console.log("Sheets webhook response:", sheetsText);
 
-    const sheetsData = await sheetsRes.text();
-
-    // 2. Send Slack notification
-    const slackWebhook = process.env.SLACK_WEBHOOK_URL;
-    const slackPayload = {
-      text: `🚀 *New Lead via Ghostbot:*
-• Name: ${name || 'N/A'}
-• Email: ${email || 'N/A'}
-• Interest: ${interest || 'N/A'}
-• Summary: ${summary || ''}`
-    };
-
-    await fetch(slackWebhook, {
+    // Send Slack notification
+    console.log("Sending Slack notification...");
+    const slackRes = await fetch(process.env.SLACK_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(slackPayload)
+      body: JSON.stringify({
+        text: `*New Lead via Ghostbot*\nName: ${name}\nEmail: ${email}\nInterest: ${interest}\nSummary: ${summary}`
+      })
     });
+    console.log("Slack response status:", slackRes.status);
 
-    // 3. Return success
-    res.status(200).json({ status: 'Lead captured and Slack notified', sheetsResponse: sheetsData });
+    res.status(200).json({ status: 'lead logged and notified' });
   } catch (err) {
-    console.error('Lead capture error:', err);
+    console.error("Error in lead handler:", err);
     res.status(500).json({ error: err.message });
   }
 }
