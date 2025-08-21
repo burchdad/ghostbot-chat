@@ -1,17 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF‑8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ghostbot</title>
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #121217; }
+    #ghostbot-widget {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 360px;
+      max-height: 600px;
+      background: #1e1e28;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 9999;
+    }
+    #ghostbot-header {
+      background: #1db954;
+      color: #121217;
+      padding: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #ghostbot-chatbox {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      background: #1e1e28;
+      color: #fff;
+    }
+    .message { margin: 8px 0; padding: 8px 12px; border-radius: 10px; max-width: 80%; word-wrap: break-word; }
+    .bot { background: #1db954; color: #121217; }
+    .user { background: #333; color: #1db954; align-self: flex-end; text-align: right; }
+    #ghostbot-input { display: flex; padding: 8px; background: #14141f; }
+    #ghostbot-input input { flex: 1; padding: 8px; border-radius: 8px 0 0 8px; border: none; }
+    #ghostbot-input button { padding: 8px 12px; background: #1db954; color: #121217; border: none; border-radius: 0 8px 8px 0; cursor: pointer; }
+    #ghostbot-launcher {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background: #1db954;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 9998;
+      font-size: 28px;
+    }
+  </style>
 </head>
 <body>
-  <div id="chatbox"></div>
-  <div id="input">
-    <input id="userInput" placeholder="Ask Ghostbot anything..." />
-    <button onclick="sendMessage()">Send</button>
+
+  <div id="ghostbot-widget">
+    <div id="ghostbot-header" onclick="toggleGhostbot()">Ghostbot 💬</div>
+    <div id="ghostbot-chatbox"></div>
+    <div id="ghostbot-input">
+      <input type="text" id="ghostbot-userInput" placeholder="Ask Ghostbot anything..." />
+      <button onclick="ghostbotSendMessage()">Send</button>
+    </div>
   </div>
-  <script src="script.js"></script>
+
+  <div id="ghostbot-launcher" onclick="toggleGhostbot()">💬</div>
+
+  <script>
+    const apiKey = "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";
+
+    function toggleGhostbot() {
+      const widget = document.getElementById("ghostbot-widget");
+      const launcher = document.getElementById("ghostbot-launcher");
+      if (widget.style.display === "none") {
+        widget.style.display = "flex";
+        launcher.style.display = "none";
+      } else {
+        widget.style.display = "none";
+        launcher.style.display = "flex";
+      }
+    }
+
+    window.onload = () => {
+      setTimeout(() => {
+        document.getElementById("ghostbot-widget").style.display = "flex";
+        document.getElementById("ghostbot-launcher").style.display = "none";
+        document.getElementById("ghostbot-chatbox").innerHTML += `<div class='message bot'>Hey there! 👋 How’s your day going?</div>`;
+      }, 2000);
+    };
+
+    async function ghostbotSendMessage() {
+      const input = document.getElementById("ghostbot-userInput");
+      const chatbox = document.getElementById("ghostbot-chatbox");
+      const message = input.value.trim();
+      if (!message) return;
+      chatbox.innerHTML += `<div class='message user'>${message}</div>`;
+      input.value = "";
+
+      const messages = [
+        { role: "system", content: "You are Ghostbot, a friendly AI assistant for Ghost AI Solutions. Answer questions, promote services, qualify leads, and offer help." },
+        { role: "user", content: message }
+      ];
+
+      try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: "gpt-4",
+            messages,
+            temperature: 0.7
+          })
+        });
+
+        const data = await response.json();
+        const reply = data.choices[0].message.content;
+        chatbox.innerHTML += `<div class='message bot'>${reply}</div>`;
+        chatbox.scrollTop = chatbox.scrollHeight;
+      } catch (err) {
+        chatbox.innerHTML += `<div class='message bot'>Oops! Something went wrong. Please try again later.</div>`;
+        console.error(err);
+      }
+    }
+  </script>
 </body>
 </html>
