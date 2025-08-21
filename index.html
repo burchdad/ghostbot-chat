@@ -72,6 +72,10 @@
   <div id="ghostbot-launcher" onclick="toggleGhostbot()">💬</div>
 
   <script>
+    let chat_history = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
+    let lead = { name: "", email: "", interest: "" };
+    let leadStage = 0; // 0 = none, 1 = name, 2 = email, 3 = interest, 4 = submitted
+
     function toggleGhostbot() {
       const widget = document.getElementById("ghostbot-widget");
       const launcher = document.getElementById("ghostbot-launcher");
@@ -86,12 +90,17 @@
     }
 
     window.onload = () => {
-      setTimeout(() => {
-        document.getElementById("ghostbot-widget").style.display = "flex";
-        document.getElementById("ghostbot-launcher").style.display = "none";
-        document.getElementById("ghostbot-chatbox").innerHTML += `<div class='message bot'>Hey there! 👋 How’s your day going?</div>`;
-        document.getElementById("ghostbot-userInput").focus();
-      }, 2000);
+      const chatbox = document.getElementById("ghostbot-chatbox");
+      if (chat_history.length) {
+        chat_history.forEach(msg => {
+          chatbox.innerHTML += `<div class='message ${msg.role}'>${msg.text}</div>`;
+        });
+      } else {
+        chatbox.innerHTML += `<div class='message bot'>Hey there! 👋 How’s your day going?</div>`;
+      }
+      document.getElementById("ghostbot-widget").style.display = "flex";
+      document.getElementById("ghostbot-launcher").style.display = "none";
+      document.getElementById("ghostbot-userInput").focus();
     };
 
     function handleKey(e) {
@@ -101,17 +110,45 @@
       }
     }
 
+    function appendMessage(role, text) {
+      const chatbox = document.getElementById("ghostbot-chatbox");
+      chatbox.innerHTML += `<div class='message ${role}'>${text}</div>`;
+      chat_history.push({ role, text });
+      sessionStorage.setItem("chat_history", JSON.stringify(chat_history));
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
     async function ghostbotSendMessage() {
       const input = document.getElementById("ghostbot-userInput");
-      const chatbox = document.getElementById("ghostbot-chatbox");
       const message = input.value.trim();
       if (!message) return;
-      chatbox.innerHTML += `<div class='message user'>${message}</div>`;
+      appendMessage("user", message);
       input.value = "";
       input.focus();
 
+      if (leadStage > 0 && leadStage < 4) {
+        if (leadStage === 1) lead.name = message;
+        if (leadStage === 2) lead.email = message;
+        if (leadStage === 3) lead.interest = message;
+        leadStage++;
+
+        if (leadStage === 2) return appendMessage("bot", "Thanks! What’s your email?");
+        if (leadStage === 3) return appendMessage("bot", "What service are you interested in?");
+        if (leadStage === 4) {
+          const summary = `Name: ${lead.name}, Email: ${lead.email}, Interest: ${lead.interest}`;
+          appendMessage("bot", `Got it! 📩 We'll follow up soon. Summary: ${summary}`);
+
+          await fetch("/api/lead", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...lead, summary })
+          });
+          return;
+        }
+      }
+
       const messages = [
-        { role: "system", content: "You are Ghostbot, a friendly AI assistant for Ghost AI Solutions. Answer questions, promote services, qualify leads, and offer help." },
+        { role: "system", content: "You are Ghostbot, a friendly AI assistant for Ghost AI Solutions. Qualify leads by asking name, email, and interest." },
         { role: "user", content: message }
       ];
 
@@ -121,14 +158,14 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages })
         });
-
         const data = await response.json();
         if (data.error) throw new Error(data.error);
         const reply = data.reply;
-        chatbox.innerHTML += `<div class='message bot'>${reply}</div>`;
-        chatbox.scrollTop = chatbox.scrollHeight;
+        appendMessage("bot", reply);
+
+        if (reply.toLowerCase().includes("your name")) leadStage = 1;
       } catch (err) {
-        chatbox.innerHTML += `<div class='message bot'>Oops! Something went wrong. Please try again later.</div>`;
+        appendMessage("bot", "Oops! Something went wrong. Please try again later.");
         console.error("Ghostbot Error:", err);
       }
     }
