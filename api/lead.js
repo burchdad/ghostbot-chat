@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   const { name, email, interest, summary } = req.body;
 
   try {
-    // Send to Google Sheets webhook
+    // 1. Send to Google Sheets webhook
     const webhookUrl = process.env.LEADS_SHEET_WEBHOOK_URL;
 
     const sheetsRes = await fetch(webhookUrl, {
@@ -15,11 +15,24 @@ export default async function handler(req, res) {
 
     const sheetsData = await sheetsRes.text();
 
-    // Optional: send email notification via Buttondown or fallback (placeholder)
-    // Note: Buttondown's API does not currently support transactional email; you may need Resend or SMTP service
+    // 2. Send Slack notification
+    const slackWebhook = process.env.SLACK_WEBHOOK_URL;
+    const slackPayload = {
+      text: `🚀 *New Lead via Ghostbot:*
+• Name: ${name || 'N/A'}
+• Email: ${email || 'N/A'}
+• Interest: ${interest || 'N/A'}
+• Summary: ${summary || ''}`
+    };
 
-    // Respond with success
-    res.status(200).json({ status: 'Lead captured', sheetsResponse: sheetsData });
+    await fetch(slackWebhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(slackPayload)
+    });
+
+    // 3. Return success
+    res.status(200).json({ status: 'Lead captured and Slack notified', sheetsResponse: sheetsData });
   } catch (err) {
     console.error('Lead capture error:', err);
     res.status(500).json({ error: err.message });
