@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ghostbot Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #121217; color: white; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    #widget { width: 400px; height: 600px; background: #1e1e28; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
+    #header { padding: 16px; background: #1db954; color: #121217; font-weight: bold; border-radius: 12px 12px 0 0; }
+    #chatbox { flex: 1; overflow-y: auto; padding: 12px; }
+    #input { display: flex; padding: 10px; }
+    input[type=text] { flex: 1; padding: 8px; border: none; border-radius: 6px 0 0 6px; }
+    button { padding: 8px 12px; background: #1db954; color: #121217; border: none; border-radius: 0 6px 6px 0; cursor: pointer; }
+    .bot, .user { margin: 6px 0; padding: 8px 10px; border-radius: 8px; max-width: 80%; }
+    .bot { background: #1db954; color: #121217; }
+    .user { background: #333; color: #1db954; align-self: flex-end; }
+  </style>
+</head>
+<body>
+  <div id="widget">
+    <div id="header">Ghostbot</div>
+    <div id="chatbox"></div>
+    <div id="input">
+      <input type="text" id="userInput" placeholder="Ask Ghostbot...">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chatbox = document.getElementById("chatbox");
+    const input = document.getElementById("userInput");
+    let config = null;
+
+    function append(role, text) {
+      const msg = document.createElement("div");
+      msg.className = role;
+      msg.textContent = text;
+      chatbox.appendChild(msg);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const message = input.value.trim();
+      if (!message) return;
+      append("user", message);
+      input.value = "";
+
+      const messages = [
+        { role: "system", content: `You are Ghostbot, a branded assistant for ${config.businessName}. Use the greeting: '${config.greeting}'. Mention services like ${config.services.join(", " || "custom bots")}. Be helpful and friendly.` },
+        { role: "user", content: message }
+      ];
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages })
+      });
+
+      const data = await res.json();
+      append("bot", data.reply);
+    }
+
+    window.onload = async () => {
+      const id = new URLSearchParams(location.search).get("configId");
+      if (!id) return append("bot", "Missing config ID");
+
+      const res = await fetch(`/api/config?id=${id}`);
+      config = await res.json();
+
+      append("bot", config.greeting || "Hey there! How can I help you today?");
+    };
+  </script>
+</body>
+</html>
