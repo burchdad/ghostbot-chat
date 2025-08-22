@@ -1,10 +1,11 @@
-// Full implementation of the upgraded Ghostbot lead handling serverless function
+// Enhanced lead capture handler with disposable email detection, scoring, and UTM attribution
 import fetch from 'node-fetch';
+import { isDisposableEmail } from '../emailCheck.js';
 
 export default async function handler(req, res) {
   const { name, email, interest, summary, utm_source, utm_medium, utm_campaign } = req.body;
 
-  const leadScore = scoreLead(email, summary);
+  const leadScore = scoreLead(email, summary, interest);
 
   try {
     // 1. Log to Google Sheets
@@ -41,9 +42,15 @@ export default async function handler(req, res) {
   }
 }
 
-function scoreLead(email, summary = '') {
+function scoreLead(email = '', summary = '', interest = '') {
   let score = 0;
-  if (email && !email.endsWith('@gmail.com') && !email.endsWith('@yahoo.com')) score += 20;
-  if (/urgent|asap|right away|enterprise/i.test(summary)) score += 30;
-  return score;
+
+  if (isDisposableEmail(email)) score -= 50;
+  else if (!email.endsWith('@gmail.com') && !email.endsWith('@yahoo.com')) score += 20;
+
+  if (/urgent|asap|right away|immediate|priority/i.test(summary)) score += 30;
+  if (/enterprise|large team|scale/i.test(interest)) score += 20;
+  if (/low|under/i.test(interest)) score -= 10;
+
+  return Math.max(0, score); // Clamp score to non-negative
 }
