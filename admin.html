@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ghostbot Admin Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #121217; color: #fff; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
+    th { background-color: #1db954; color: #121217; }
+    button { padding: 6px 12px; margin: 4px; cursor: pointer; background: #1db954; border: none; color: #121217; border-radius: 4px; }
+    h2 { color: #1db954; }
+  </style>
+</head>
+<body>
+  <h2>Ghostbot Config Admin</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Business</th>
+        <th>Email</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="configTable"></tbody>
+  </table>
+
+  <script>
+    async function loadConfigs() {
+      const res = await fetch('/api/config');
+      const configs = await res.json();
+      const tbody = document.getElementById('configTable');
+      tbody.innerHTML = '';
+
+      Object.entries(configs).forEach(([id, config]) => {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+          <td>${config.businessName}</td>
+          <td>${config.contactEmail}</td>
+          <td>${new Date(config.createdAt).toLocaleString()}</td>
+          <td>
+            <button onclick="window.open('/demo?configId=${id}', '_blank')">Launch</button>
+            <button onclick='download(${JSON.stringify(config)})'>Download</button>
+          </td>
+        `;
+
+        tbody.appendChild(row);
+      });
+    }
+
+    function download(config) {
+      const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${config.businessName.replace(/\s+/g, '-')}-config.json`;
+      a.click();
+    }
+
+    loadConfigs();
+  </script>
+</body>
+</html>
