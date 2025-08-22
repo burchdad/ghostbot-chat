@@ -11,10 +11,15 @@
     th { background-color: #1db954; color: #121217; }
     button { padding: 6px 12px; margin: 4px; cursor: pointer; background: #1db954; border: none; color: #121217; border-radius: 4px; }
     h2 { color: #1db954; }
+    #controls { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
   </style>
 </head>
 <body>
   <h2>Ghostbot Config Admin</h2>
+  <div id="controls">
+    <div><strong>Protected Access Enabled</strong> (via Vercel settings)</div>
+    <button onclick="downloadAllCSV()">Download All as CSV</button>
+  </div>
   <table>
     <thead>
       <tr>
@@ -28,9 +33,12 @@
   </table>
 
   <script>
+    let allConfigs = {};
+
     async function loadConfigs() {
       const res = await fetch('/api/config');
       const configs = await res.json();
+      allConfigs = configs;
       const tbody = document.getElementById('configTable');
       tbody.innerHTML = '';
 
@@ -58,6 +66,30 @@
       a.href = url;
       a.download = `${config.businessName.replace(/\s+/g, '-')}-config.json`;
       a.click();
+    }
+
+    function downloadAllCSV() {
+      const headers = ["Business Name","Email","Website","Slack Webhook","Sheets Webhook","Calendly","Greeting","Created At"];
+      const rows = [headers];
+      Object.values(allConfigs).forEach(cfg => {
+        rows.push([
+          cfg.businessName,
+          cfg.contactEmail,
+          cfg.website || '',
+          cfg.slackWebhook || '',
+          cfg.sheetsWebhook || '',
+          cfg.calendly || '',
+          cfg.greeting || '',
+          new Date(cfg.createdAt).toLocaleString()
+        ]);
+      });
+
+      const csvContent = rows.map(r => r.map(cell => `"${cell}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = "ghostbot-client-configs.csv";
+      link.click();
     }
 
     loadConfigs();
