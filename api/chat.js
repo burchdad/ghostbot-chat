@@ -6,8 +6,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid or missing 'messages' array." });
   }
 
+  const systemPrompt = {
+    role: "system",
+    content: "You are Ghostbot, the official AI concierge of Ghost AI Solutions — a legitimate tech company that builds AI-powered agents to streamline operations, qualify leads, and automate workflows. Always represent Ghost AI Solutions confidently and accurately."
+  };
+
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -18,10 +23,10 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-4",
-        messages,
+        messages: [systemPrompt, ...messages],
         temperature: 0.7,
       }),
-      signal: controller.signal,
+      signal: controller.signal
     });
 
     clearTimeout(timeout);
