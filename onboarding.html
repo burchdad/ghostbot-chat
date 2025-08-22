@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ghostbot Onboarding Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    input, textarea, select { width: 100%; padding: 8px; margin: 8px 0 16px; }
+    button { padding: 10px 20px; background: #1db954; color: white; border: none; cursor: pointer; margin-right: 10px; }
+    h2 { color: #1db954; }
+  </style>
+</head>
+<body>
+  <h2>Ghostbot Client Onboarding</h2>
+  <form id="onboardingForm">
+    <label>Business Name</label>
+    <input type="text" name="name" required>
+
+    <label>Primary Contact Email</label>
+    <input type="email" name="email" required>
+
+    <label>Website URL</label>
+    <input type="url" name="website">
+
+    <label>Slack Webhook URL</label>
+    <input type="url" name="slack">
+
+    <label>Google Sheets Webhook URL</label>
+    <input type="url" name="sheet">
+
+    <label>Calendly Booking Link</label>
+    <input type="url" name="calendly">
+
+    <label>List of Services (comma-separated)</label>
+    <textarea name="services" rows="3"></textarea>
+
+    <label>Bot Greeting</label>
+    <input type="text" name="greeting" placeholder="Hey there! How can I help you today?">
+
+    <button type="submit">Generate Config</button>
+    <button type="button" onclick="downloadConfig()">Download Config</button>
+    <button type="button" onclick="launchBot()">Launch Ghostbot</button>
+  </form>
+
+  <pre id="output" style="background:#f4f4f4; padding:15px; display:none;"></pre>
+
+  <script>
+    let configData = {};
+
+    document.getElementById('onboardingForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const data = new FormData(e.target);
+      configData = {
+        businessName: data.get('name'),
+        contactEmail: data.get('email'),
+        website: data.get('website'),
+        slackWebhook: data.get('slack'),
+        sheetsWebhook: data.get('sheet'),
+        calendly: data.get('calendly'),
+        services: data.get('services').split(',').map(s => s.trim()),
+        greeting: data.get('greeting') || "Hey there! How can I help you today?"
+      };
+      document.getElementById('output').style.display = 'block';
+      document.getElementById('output').textContent = JSON.stringify(configData, null, 2);
+    });
+
+    function downloadConfig() {
+      if (!configData || !configData.businessName) return alert("Please generate a config first.");
+      const blob = new Blob([JSON.stringify(configData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${configData.businessName.replace(/\s+/g, '-')}-ghostbot-config.json`;
+      a.click();
+    }
+
+    function launchBot() {
+      if (!configData || !configData.businessName) return alert("Please generate a config first.");
+      fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(configData)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.id) {
+          window.location.href = `/demo?configId=${data.id}`;
+        } else {
+          alert("Failed to launch bot.");
+        }
+      });
+    }
+  </script>
+</body>
+</html>
