@@ -8,13 +8,14 @@
     body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #121217; }
     #ghostbot-widget {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 360px;
+      bottom: 50%;
+      right: 50%;
+      transform: translate(50%, 50%);
+      width: 400px;
       max-height: 600px;
       background: #1e1e28;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
       display: none;
       flex-direction: column;
       overflow: hidden;
@@ -23,9 +24,10 @@
     #ghostbot-header {
       background: #1db954;
       color: #121217;
-      padding: 12px;
+      padding: 14px;
       font-weight: bold;
       cursor: pointer;
+      font-size: 16px;
     }
     #ghostbot-chatbox {
       flex: 1;
@@ -34,12 +36,13 @@
       background: #1e1e28;
       color: #fff;
     }
-    .message { margin: 8px 0; padding: 8px 12px; border-radius: 10px; max-width: 80%; word-wrap: break-word; }
+    .message { margin: 8px 0; padding: 8px 12px; border-radius: 10px; max-width: 85%; word-wrap: break-word; }
     .bot { background: #1db954; color: #121217; }
     .user { background: #333; color: #1db954; align-self: flex-end; text-align: right; }
     #ghostbot-input { display: flex; padding: 8px; background: #14141f; }
     #ghostbot-input input { flex: 1; padding: 8px; border-radius: 8px 0 0 8px; border: none; outline: none; }
     #ghostbot-input button { padding: 8px 12px; background: #1db954; color: #121217; border: none; border-radius: 0 8px 8px 0; cursor: pointer; }
+    .quick-reply { background: #292d3e; color: #1db954; border: 1px solid #1db954; border-radius: 6px; padding: 6px 10px; margin: 5px 5px 0 0; display: inline-block; cursor: pointer; }
     #ghostbot-launcher {
       position: fixed;
       bottom: 20px;
@@ -74,7 +77,18 @@
   <script>
     let chat_history = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
     let lead = { name: "", email: "", interest: "" };
-    let leadStage = 0; // 0 = none, 1 = name, 2 = email, 3 = interest, 4 = submitted
+    let leadStage = 0;
+    let userIntent = "";
+
+    const services = ["custom bots", "AI workflows", "client onboarding automation", "demo booking agents", "data enrichment bots"];
+
+    // Capture UTM params
+    const params = new URLSearchParams(window.location.search);
+    const utm = {
+      utm_source: params.get("utm_source") || "",
+      utm_medium: params.get("utm_medium") || "",
+      utm_campaign: params.get("utm_campaign") || ""
+    };
 
     function toggleGhostbot() {
       const widget = document.getElementById("ghostbot-widget");
@@ -96,7 +110,8 @@
           chatbox.innerHTML += `<div class='message ${msg.role}'>${msg.text}</div>`;
         });
       } else {
-        chatbox.innerHTML += `<div class='message bot'>Hey there! 👋 How’s your day going?</div>`;
+        appendMessage("bot", "Hey there! 👋 How can I help you today?");
+        showQuickReplies();
       }
       document.getElementById("ghostbot-widget").style.display = "flex";
       document.getElementById("ghostbot-launcher").style.display = "none";
@@ -118,6 +133,33 @@
       chatbox.scrollTop = chatbox.scrollHeight;
     }
 
+    function showQuickReplies() {
+      const chatbox = document.getElementById("ghostbot-chatbox");
+      const options = ["Just browsing", "I have a question", "I'd like a quote", "Book a demo", "Talk to someone"];
+      options.forEach(opt => {
+        const btn = document.createElement("div");
+        btn.className = "quick-reply";
+        btn.innerText = opt;
+        btn.onclick = () => handleQuickReply(opt);
+        chatbox.appendChild(btn);
+      });
+    }
+
+    function handleQuickReply(text) {
+      appendMessage("user", text);
+      if (text.includes("quote") || text.includes("Talk")) {
+        userIntent = "lead";
+        leadStage = 1;
+        appendMessage("bot", "Great! What's your name?");
+      } else if (text.includes("Book")) {
+        appendMessage("bot", "Here's the link to schedule a demo: <a href='https://calendly.com/stephen-burch-ghostdefenses/demo-call' target='_blank'>Book a Demo</a>");
+      } else if (text.includes("question")) {
+        appendMessage("bot", "Ask away — I'm here to help you understand our AI services.");
+      } else {
+        appendMessage("bot", "No problem! Browse freely and ask anything when you're ready.");
+      }
+    }
+
     async function ghostbotSendMessage() {
       const input = document.getElementById("ghostbot-userInput");
       const message = input.value.trim();
@@ -132,28 +174,28 @@
         if (leadStage === 3) lead.interest = message;
         leadStage++;
 
-        if (leadStage === 2) return appendMessage("bot", "Thanks! What’s your email?");
-        if (leadStage === 3) return appendMessage("bot", "What service are you interested in?");
+        if (leadStage === 2) return appendMessage("bot", "Thanks! What's your email?");
+        if (leadStage === 3) return appendMessage("bot", "Got it — and which service are you most interested in?");
         if (leadStage === 4) {
           const summary = `Name: ${lead.name}, Email: ${lead.email}, Interest: ${lead.interest}`;
-          appendMessage("bot", `Got it! 📩 We'll follow up soon. Summary: ${summary}`);
+          appendMessage("bot", `✅ Just to confirm: ${summary}<br><br><strong>Looks good? Sending now...</strong>`);
 
-          await fetch("/api/lead.js", {
+          await fetch("/api/lead", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...lead, summary })
+            body: JSON.stringify({ ...lead, summary, ...utm })
           });
           return;
         }
       }
 
       const messages = [
-        { role: "system", content: "You are Ghostbot, a friendly AI assistant for Ghost AI Solutions. Qualify leads by asking name, email, and interest." },
+        { role: "system", content: "You are Ghostbot, a friendly AI concierge for Ghost AI Solutions. Answer questions, provide resources, and offer follow-ups when users show interest." },
         { role: "user", content: message }
       ];
 
       try {
-        const response = await fetch("/api/chat.js", {
+        const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages })
@@ -163,7 +205,11 @@
         const reply = data.reply;
         appendMessage("bot", reply);
 
-        if (reply.toLowerCase().includes("your name")) leadStage = 1;
+        const lower = reply.toLowerCase();
+        if (lower.includes("your name")) leadStage = 1;
+        if (services.some(service => message.toLowerCase().includes(service))) {
+          appendMessage("bot", `We’ve helped other teams with ${message}. Want a case study or to talk to someone?`);
+        }
       } catch (err) {
         appendMessage("bot", "Oops! Something went wrong. Please try again later.");
         console.error("Ghostbot Error:", err);
