@@ -1,4 +1,4 @@
-// Ghostbot integration with Site Scanner GPT
+// Ghostbot integration with Site Scanner GPT + Sheets tab logging
 import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -35,6 +35,25 @@ Never perform state-changing actions. Output two parts:
       try { findingsJson = JSON.parse(jsonMatch[0]); } catch {}
     }
     const markdownAudit = jsonMatch ? raw.slice(0, jsonMatch.index).trim() : raw;
+
+    // Send summary to Sheets with new tab per domain
+    try {
+      const domain = new URL(urls[0]).hostname.replace(/^www\./, '').replace(/[^a-zA-Z0-9]/g, '-');
+      const summary = markdownAudit.slice(0, 500) + '...';
+
+      await fetch(process.env.LEADS_SHEET_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: domain + '@ghostscan.ai',
+          name: 'Site Audit Trigger',
+          interest: `Audit of ${domain}`,
+          summary
+        })
+      });
+    } catch (sheetErr) {
+      console.error("Sheets log error:", sheetErr);
+    }
 
     res.status(200).json({ markdownAudit, findingsJson, raw });
   } catch (err) {
