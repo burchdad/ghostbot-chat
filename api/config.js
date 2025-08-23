@@ -1,4 +1,4 @@
-// Ghostbot Config API with email notification
+// Ghostbot Config API with email notification and implicit lead capture
 let configs = {};
 
 export default async function handler(req, res) {
@@ -8,7 +8,7 @@ export default async function handler(req, res) {
       const id = config.businessName?.toLowerCase().replace(/\s+/g, '-') || Date.now().toString();
       configs[id] = { ...config, createdAt: new Date().toISOString() };
 
-      // Send welcome email (example with Resend API or any SMTP service)
+      // Send welcome email
       await sendWelcomeEmail(config.contactEmail, config.businessName);
 
       return res.status(200).json({ status: 'saved', id });
