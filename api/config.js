@@ -1,4 +1,4 @@
-// Ghostbot Config API (in-memory proof of concept)
+// Ghostbot Config API with email notification
 let configs = {};
 
 export default async function handler(req, res) {
@@ -7,6 +7,10 @@ export default async function handler(req, res) {
       const config = req.body;
       const id = config.businessName?.toLowerCase().replace(/\s+/g, '-') || Date.now().toString();
       configs[id] = { ...config, createdAt: new Date().toISOString() };
+
+      // Send welcome email (example with Resend API or any SMTP service)
+      await sendWelcomeEmail(config.contactEmail, config.businessName);
+
       return res.status(200).json({ status: 'saved', id });
     } catch (err) {
       return res.status(500).json({ error: 'Failed to save config' });
@@ -20,5 +24,28 @@ export default async function handler(req, res) {
     }
   } else {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+}
+
+async function sendWelcomeEmail(to, company) {
+  if (!to || !company) return;
+  const msg = {
+    to,
+    from: 'noreply@ghostai.solutions',
+    subject: `Welcome to Ghostbot, ${company}!`,
+    text: `Hi ${company},\n\nThanks for joining Ghostbot. Your AI assistant is now ready to go. You can preview your bot here: https://ghostai.solutions/demo?configId=${company.toLowerCase().replace(/\s+/g, '-')}`,
+  };
+
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(msg)
+    });
+  } catch (err) {
+    console.error('Email failed:', err);
   }
 }
