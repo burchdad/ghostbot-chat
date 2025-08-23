@@ -1,4 +1,4 @@
-// Secure and enhanced Ghostbot client logic with soft lead capture and enhancements
+// Ghostbot logic with auto-audit, lead capture, and tailored pitch
 let lead = { name: '', email: '', phone: '', interest: '', industry: '', budget: '' };
 let stage = 0;
 let userIntent = '';
@@ -13,6 +13,45 @@ async function sendMessage() {
   append("user", msg);
   input.value = "";
   input.focus();
+
+  // Auto-trigger website audit if user enters a URL
+  if (/https?:\/\/|\.com|\.org|\.net/.test(msg)) {
+    append("bot", "Analyzing your site now... give me a moment 🧠");
+    try {
+      const scan = await fetch("/api/scan-site", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls: [msg] })
+      });
+
+      const { markdownAudit, findingsJson } = await scan.json();
+      append("bot", markdownAudit);
+
+      const leadInterest = findingsJson?.findings?.[0]?.category || "Site Audit";
+
+      append("bot", `Would you like a deeper breakdown or a walkthrough on how we can fix this?`);
+
+      await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Website Audit Request",
+          interest: leadInterest,
+          summary: markdownAudit
+        })
+      });
+
+      // Auto-offer Calendly based on findings
+      const mentionLead = markdownAudit.toLowerCase().includes("lead") || markdownAudit.toLowerCase().includes("chatbot");
+      if (mentionLead) {
+        append("bot", `Looks like your site may benefit from better lead capture. Want to book a walkthrough? https://calendly.com/stephen-burch-ghostdefenses/demo-call`);
+      }
+    } catch (err) {
+      append("bot", "⚠️ Sorry, I couldn’t analyze that site right now. Try again later.");
+      console.error("Audit error:", err);
+    }
+    return;
+  }
 
   if (/demo|schedule|walkthrough|book/i.test(msg)) {
     userIntent = 'demo';
