@@ -1,8 +1,10 @@
-// Ghostbot logic with auto-audit, lead capture, and tailored pitch
+// Ghostbot logic with auto-audit, lead capture, PDF email, and tailored pitch
 let lead = { name: '', email: '', phone: '', interest: '', industry: '', budget: '' };
 let stage = 0;
 let userIntent = '';
 let chat_history = [];
+let lastAudit = { markdown: '', domain: '' };
+let waitingForEmail = false;
 
 async function sendMessage() {
   const input = document.getElementById("userInput");
@@ -13,6 +15,22 @@ async function sendMessage() {
   append("user", msg);
   input.value = "";
   input.focus();
+
+  if (waitingForEmail && lastAudit.markdown && validateEmail(msg)) {
+    append("bot", "Sending a copy of the audit now ✉️...");
+    await fetch("/api/send-audit-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: msg,
+        markdown: lastAudit.markdown,
+        domain: lastAudit.domain
+      })
+    });
+    append("bot", `Sent! You should receive an email shortly.`);
+    waitingForEmail = false;
+    return;
+  }
 
   // Auto-trigger website audit if user enters a URL
   if (/https?:\/\/|\.com|\.org|\.net/.test(msg)) {
@@ -27,9 +45,11 @@ async function sendMessage() {
       const { markdownAudit, findingsJson } = await scan.json();
       append("bot", markdownAudit);
 
-      const leadInterest = findingsJson?.findings?.[0]?.category || "Site Audit";
+      lastAudit = { markdown: markdownAudit, domain: new URL(msg).hostname };
+      append("bot", `Would you like a deeper breakdown, a walkthrough, or a copy of this audit via email? Just type your email.`);
+      waitingForEmail = true;
 
-      append("bot", `Would you like a deeper breakdown or a walkthrough on how we can fix this?`);
+      const leadInterest = findingsJson?.findings?.[0]?.category || "Site Audit";
 
       await fetch("/api/lead", {
         method: "POST",
@@ -41,7 +61,6 @@ async function sendMessage() {
         })
       });
 
-      // Auto-offer Calendly based on findings
       const mentionLead = markdownAudit.toLowerCase().includes("lead") || markdownAudit.toLowerCase().includes("chatbot");
       if (mentionLead) {
         append("bot", `Looks like your site may benefit from better lead capture. Want to book a walkthrough? https://calendly.com/stephen-burch-ghostdefenses/demo-call`);
