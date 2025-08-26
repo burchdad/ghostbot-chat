@@ -5,66 +5,123 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ghostbot</title>
   <style>
-    body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #121217; }
+    :root {
+      --bg: #1e1e28;
+      --fg: #ffffff;
+      --accent: #1db954;
+    }
+    html[data-theme="light"] {
+      --bg: #ffffff;
+      --fg: #111;
+      --accent: #1db954;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--fg);
+    }
+
     #ghostbot-widget {
       position: fixed;
       bottom: 50%;
       right: 50%;
       transform: translate(50%, 50%);
-      width: 400px;
-      max-height: 600px;
-      background: #1e1e28;
+      width: 100%;
+      max-width: 420px;
+      height: 600px;
+      background: var(--bg);
       border-radius: 16px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-      display: none;
+      display: flex;
       flex-direction: column;
       overflow: hidden;
       z-index: 9999;
     }
+
+    html.embed body,
+    html.embed #ghostbot-widget {
+      position: static;
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
     #ghostbot-header {
-      background: #1db954;
-      color: #121217;
+      background: var(--accent);
+      color: var(--bg);
       padding: 14px;
       font-weight: bold;
-      cursor: pointer;
       font-size: 16px;
     }
+
     #ghostbot-chatbox {
       flex: 1;
       padding: 12px;
       overflow-y: auto;
-      background: #1e1e28;
-      color: #fff;
     }
-    .message { margin: 8px 0; padding: 8px 12px; border-radius: 10px; max-width: 85%; word-wrap: break-word; }
-    .bot { background: #1db954; color: #121217; }
-    .user { background: #333; color: #1db954; align-self: flex-end; text-align: right; }
-    #ghostbot-input { display: flex; padding: 8px; background: #14141f; }
-    #ghostbot-input input { flex: 1; padding: 8px; border-radius: 8px 0 0 8px; border: none; outline: none; }
-    #ghostbot-input button { padding: 8px 12px; background: #1db954; color: #121217; border: none; border-radius: 0 8px 8px 0; cursor: pointer; }
-    .quick-reply { background: #292d3e; color: #1db954; border: 1px solid #1db954; border-radius: 6px; padding: 6px 10px; margin: 5px 5px 0 0; display: inline-block; cursor: pointer; }
-    #ghostbot-launcher {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 60px;
-      height: 60px;
-      background: #1db954;
-      border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+
+    .message {
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-radius: 10px;
+      max-width: 85%;
+      word-wrap: break-word;
+    }
+
+    .bot {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .user {
+      background: #333;
+      color: var(--accent);
+      align-self: flex-end;
+      text-align: right;
+    }
+
+    #ghostbot-input {
       display: flex;
-      align-items: center;
-      justify-content: center;
+      padding: 8px;
+      background: var(--bg);
+    }
+
+    #ghostbot-input input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px 0 0 8px;
+      border: none;
+      outline: none;
+    }
+
+    #ghostbot-input button {
+      padding: 10px 16px;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 0 8px 8px 0;
       cursor: pointer;
-      z-index: 9998;
-      font-size: 28px;
+    }
+
+    .quick-reply {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin: 5px 5px 0 0;
+      display: inline-block;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
   <div id="ghostbot-widget">
-    <div id="ghostbot-header" onclick="toggleGhostbot()">Ghostbot 💬</div>
+    <div id="ghostbot-header">Ghostbot 💬</div>
     <div id="ghostbot-chatbox"></div>
     <div id="ghostbot-input">
       <input type="text" id="ghostbot-userInput" placeholder="Ask Ghostbot anything..." onkeydown="handleKey(event)" />
@@ -72,39 +129,19 @@
     </div>
   </div>
 
-  <div id="ghostbot-launcher" onclick="toggleGhostbot()">💬</div>
-
   <script>
+    const params = new URLSearchParams(window.location.search);
+    const isEmbed = params.get("embed") === "1" || params.get("mode") === "embed";
+    const theme = params.get("theme") || "dark";
+    document.documentElement.dataset.theme = theme;
+    if (isEmbed) document.documentElement.classList.add("embed");
+
     let chat_history = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
     let lead = { name: "", email: "", interest: "" };
     let leadStage = 0;
     let userIntent = "";
 
     const services = ["custom bots", "AI workflows", "client onboarding automation", "demo booking agents", "data enrichment bots"];
-
-    // Capture UTM params
-    const params = new URLSearchParams(window.location.search);
-    const utm = {
-      utm_source: params.get("utm_source") || "",
-      utm_medium: params.get("utm_medium") || "",
-      utm_campaign: params.get("utm_campaign") || ""
-    };
-
-    // Minimal mode support
-    const minimalMode = params.get("minimal") === "1";
-
-    function toggleGhostbot() {
-      const widget = document.getElementById("ghostbot-widget");
-      const launcher = document.getElementById("ghostbot-launcher");
-      if (widget.style.display === "none") {
-        widget.style.display = "flex";
-        launcher.style.display = "none";
-        setTimeout(() => document.getElementById("ghostbot-userInput").focus(), 300);
-      } else {
-        widget.style.display = "none";
-        launcher.style.display = "flex";
-      }
-    }
 
     window.onload = () => {
       const chatbox = document.getElementById("ghostbot-chatbox");
@@ -116,33 +153,7 @@
         appendMessage("bot", "Hey there! 👋 How can I help you today?");
         showQuickReplies();
       }
-
-      // Minimal mode: hide header and launcher, adjust widget style
-      if (minimalMode) {
-        // Hide header and launcher
-        document.getElementById("ghostbot-header").style.display = "none";
-        document.getElementById("ghostbot-launcher").style.display = "none";
-        // Make widget fill parent/container
-        const widget = document.getElementById("ghostbot-widget");
-        widget.style.position = "static";
-        widget.style.transform = "none";
-        widget.style.boxShadow = "none";
-        widget.style.borderRadius = "0";
-        widget.style.width = "100%";
-        widget.style.maxHeight = "none";
-        widget.style.height = "100%";
-        widget.style.margin = "0";
-        widget.style.top = "0";
-        widget.style.left = "0";
-        widget.style.right = "0";
-        widget.style.bottom = "0";
-        widget.style.display = "flex";
-        document.getElementById("ghostbot-userInput").focus();
-      } else {
-        document.getElementById("ghostbot-widget").style.display = "flex";
-        document.getElementById("ghostbot-launcher").style.display = "none";
-        document.getElementById("ghostbot-userInput").focus();
-      }
+      document.getElementById("ghostbot-userInput").focus();
     };
 
     function handleKey(e) {
@@ -242,6 +253,14 @@
         console.error("Ghostbot Error:", err);
       }
     }
+
+    // ⛔️ CLEAR CHAT HANDLER (listen for postMessage from parent)
+    window.addEventListener("message", (e) => {
+      if (e.data === "ghostbot-clear-history") {
+        sessionStorage.removeItem("chat_history");
+        location.reload(); // or rerender messages
+      }
+    });
   </script>
 </body>
 </html>
