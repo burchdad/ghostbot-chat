@@ -64,11 +64,11 @@
 <body>
 
   <div id="ghostbot-widget">
-  <div id="ghostbot-header">Ghostbot 💬</div>
-  <div id="ghostbot-chatbox"></div>
-  <div id="ghostbot-input">
-    <input type="text" id="ghostbot-userInput" placeholder="Ask Ghostbot anything..." onkeydown="handleKey(event)" />
-    <button onclick="ghostbotSendMessage()">Send</button>
+    <div id="ghostbot-header" onclick="toggleGhostbot()">Ghostbot 💬</div>
+    <div id="ghostbot-chatbox"></div>
+    <div id="ghostbot-input">
+      <input type="text" id="ghostbot-userInput" placeholder="Ask Ghostbot anything..." onkeydown="handleKey(event)" />
+      <button onclick="ghostbotSendMessage()">Send</button>
     </div>
   </div>
 
