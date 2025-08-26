@@ -119,14 +119,24 @@
 
       // Minimal mode: hide header and launcher, adjust widget style
       if (minimalMode) {
+        // Hide header and launcher
         document.getElementById("ghostbot-header").style.display = "none";
         document.getElementById("ghostbot-launcher").style.display = "none";
-        document.getElementById("ghostbot-widget").style.position = "static";
-        document.getElementById("ghostbot-widget").style.boxShadow = "none";
-        document.getElementById("ghostbot-widget").style.borderRadius = "0";
-        document.getElementById("ghostbot-widget").style.width = "100%";
-        document.getElementById("ghostbot-widget").style.maxHeight = "none";
-        document.getElementById("ghostbot-widget").style.display = "flex"; // <-- Ensure widget is visible!
+        // Make widget fill parent/container
+        const widget = document.getElementById("ghostbot-widget");
+        widget.style.position = "static";
+        widget.style.transform = "none";
+        widget.style.boxShadow = "none";
+        widget.style.borderRadius = "0";
+        widget.style.width = "100%";
+        widget.style.maxHeight = "none";
+        widget.style.height = "100%";
+        widget.style.margin = "0";
+        widget.style.top = "0";
+        widget.style.left = "0";
+        widget.style.right = "0";
+        widget.style.bottom = "0";
+        widget.style.display = "flex";
         document.getElementById("ghostbot-userInput").focus();
       } else {
         document.getElementById("ghostbot-widget").style.display = "flex";
