@@ -32,12 +32,13 @@
       max-width: 420px;
       height: 600px;
       background: var(--bg);
-      border-radius: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      border-radius: 18px; /* slightly more rounded */
+      box-shadow: 0 8px 32px rgba(0,0,0,0.32);
       display: flex;
       flex-direction: column;
       overflow: hidden;
       z-index: 9999;
+      margin: 24px; /* add margin so widget doesn't touch edges */
     }
 
     html.embed body,
@@ -118,31 +119,31 @@
     }
 
     #ghostbot-actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 12px;
-      padding: 12px 0 0 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 18px 0 0 0;
+      justify-items: center;
     }
 
     #ghostbot-actions button {
-      flex: 0 1 160px;
-      margin: 0;
+      width: 90%;
       padding: 12px 0;
       background: var(--accent);
       color: var(--bg);
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
       font-size: 16px;
       font-weight: 500;
       white-space: normal;
-      transition: background 0.2s;
+      transition: background 0.2s, box-shadow 0.2s;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
     #ghostbot-actions button:hover {
       background: #159c41;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
     }
   </style>
 </head>
