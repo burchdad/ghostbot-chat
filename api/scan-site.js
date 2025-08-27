@@ -38,7 +38,19 @@ Never perform state-changing actions. Output two parts:
 
     // Send summary to Sheets with new tab per domain
     try {
-      const domain = new URL(urls[0]).hostname.replace(/^www\./, '').replace(/[^a-zA-Z0-9]/g, '-');
+      // Before using new URL(urls[0]), ensure it has a protocol
+      let domain;
+      try {
+        let inputUrl = urls[0];
+        if (!/^https?:\/\//i.test(inputUrl)) {
+          inputUrl = 'https://' + inputUrl;
+        }
+        domain = new URL(inputUrl).hostname.replace(/^www\./, '').replace(/[^a-zA-Z0-9]/g, '-');
+      } catch (err) {
+        console.error("Invalid URL:", urls[0]);
+        return res.status(400).json({ error: "Invalid URL provided" });
+      }
+
       const summary = markdownAudit.slice(0, 500) + '...';
 
       await fetch(process.env.LEADS_SHEET_WEBHOOK_URL, {
