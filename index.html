@@ -157,6 +157,21 @@
         showQuickReplies();
       }
       document.getElementById("ghostbot-userInput").focus();
+
+      // Minimal/embed mode: hide header and stretch widget
+      if (isEmbed) {
+        const header = document.getElementById("ghostbot-header");
+        if (header) header.style.display = "none";
+        const widget = document.getElementById("ghostbot-widget");
+        widget.style.position = "static";
+        widget.style.transform = "none";
+        widget.style.boxShadow = "none";
+        widget.style.borderRadius = "0";
+        widget.style.width = "100%";
+        widget.style.maxWidth = "100%";
+        widget.style.height = "100%";
+        widget.style.margin = "0";
+      }
     };
 
     function handleKey(e) {
