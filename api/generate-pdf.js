@@ -11,8 +11,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { markdown = '', findingsJson = {}, domain = '', email = '' } = req.body;
-  if (!markdown || !domain || !email) return res.status(400).json({ error: 'Missing markdown, domain, or email' });
+  const { markdown = '', findingsJson = {}, domain = '' } = req.body;
+  if (!markdown || !domain) return res.status(400).json({ error: 'Missing markdown or domain' });
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Audit for ${domain}</title>
   <style>body{font-family:sans-serif;padding:20px;} pre{white-space:pre-wrap;word-wrap:break-word;}</style></head>
@@ -32,6 +32,7 @@ export default async function handler(req, res) {
 
     // Save JSON findings
     await fs.writeFile(jsonPath, JSON.stringify(findingsJson, null, 2));
+    await fs.writeFile(pdfPath, html); // Should create /tmp/audit-<domain>.pdf
 
     // Google Drive setup
     const auth = new google.auth.JWT(
