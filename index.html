@@ -121,17 +121,27 @@
       display: flex;
       justify-content: space-between;
       padding: 10px;
+      gap: 8px; /* Add spacing between buttons */
+      flex-wrap: wrap;
     }
 
     #ghostbot-actions button {
-      flex: 1;
-      margin: 0 5px;
+      flex: 1 1 auto;
+      min-width: 0;
+      margin: 0;
       padding: 10px;
       background: var(--accent);
       color: var(--bg);
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      font-size: 15px;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    #ghostbot-actions button:hover {
+      background: #159c41;
     }
   </style>
 </head>
@@ -380,7 +390,7 @@
 
     function promptTrackBot() {
       const event = prompt('Enter event name to track:');
-      const details = prompt('Enter event details:");
+      const details = prompt('Enter event details:');
       if (event && details) {
         appendMessage('user', `Track bot event: ${event} - ${details}`);
         trackBot(event, details).then(res => {
