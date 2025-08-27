@@ -4,6 +4,7 @@ import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
 import fs from 'fs/promises';
 import path from 'path';
+import FormData from 'form-data';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
