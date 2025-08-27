@@ -379,33 +379,42 @@
 
     function promptGeneratePDF() {
       const btn = document.querySelector('#ghostbot-actions button[onclick="promptGeneratePDF()"]');
-      const leadId = prompt('Enter Lead ID for PDF:');
-      if (leadId) {
-        btn.textContent = "Generating PDF...";
-        btn.disabled = true;
-        appendMessage('user', `Generate PDF for Lead: ${leadId}`);
-        generatePDF({ leadId }).then(res => {
+      const email = prompt('Enter your email to receive the audit documents:');
+      if (!email) return;
+      btn.textContent = "Generating PDF...";
+      btn.disabled = true;
+
+      // Collect markdown, findingsJson, and domain as needed
+      const markdown = getLatestAuditMarkdown(); // Replace with your actual function
+      const findingsJson = getLatestAuditJson(); // Replace with your actual function
+      const domain = getCurrentDomain(); // Replace with your actual function
+
+      fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ markdown, findingsJson, domain, email })
+      })
+        .then(res => res.json())
+        .then(data => {
           btn.textContent = "Generate PDF";
           btn.disabled = false;
-          if (res.pdfUrl && res.jsonUrl) {
+          if (data.pdfUrl && data.jsonUrl) {
             appendMessage('bot', `
               <b>Download your documents:</b><br>
-              <a href="${res.pdfUrl}" target="_blank">📄 PDF Audit</a><br>
-              <a href="${res.jsonUrl}" target="_blank">🗂 JSON Findings</a>
+              <a href="${data.pdfUrl}" target="_blank">📄 PDF Audit</a><br>
+              <a href="${data.jsonUrl}" target="_blank">🗂 JSON Findings</a>
+              <br><a href="${data.driveFolderUrl}" target="_blank">📁 View Google Drive Folder</a>
             `);
           }
-          if (res.emailSent) {
+          if (data.emailSent) {
             appendMessage('bot', '✅ Audit documents have also been emailed to you.');
           }
-          if (res.driveFolderUrl) {
-            appendMessage('bot', `📁 Files are stored in your Google Drive folder: <a href="${res.driveFolderUrl}" target="_blank">View Folder</a>`);
-          }
-        }).catch(() => {
+        })
+        .catch(() => {
           btn.textContent = "Generate PDF";
           btn.disabled = false;
           appendMessage('bot', '❌ Sorry, there was a problem generating your PDF.');
         });
-      }
     }
 
     function promptSaveAudit() {
