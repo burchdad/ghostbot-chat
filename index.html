@@ -186,7 +186,10 @@
       chatbox.innerHTML += `<div class='message ${role}'>${text}</div>`;
       chat_history.push({ role, text });
       sessionStorage.setItem("chat_history", JSON.stringify(chat_history));
-      chatbox.scrollTop = chatbox.scrollHeight;
+      // Ensure chatbox scrolls to bottom after new message
+      setTimeout(() => {
+        chatbox.scrollTop = chatbox.scrollHeight;
+      }, 0);
     }
 
     function showQuickReplies() {
