@@ -119,25 +119,26 @@
 
     #ghostbot-actions {
       display: flex;
-      justify-content: space-between;
-      padding: 10px;
-      gap: 8px; /* Add spacing between buttons */
       flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px 0 0 0;
     }
 
     #ghostbot-actions button {
-      flex: 1 1 auto;
-      min-width: 0;
+      flex: 0 1 160px;
       margin: 0;
-      padding: 10px;
+      padding: 12px 0;
       background: var(--accent);
       color: var(--bg);
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 15px;
-      white-space: nowrap;
+      font-size: 16px;
+      font-weight: 500;
+      white-space: normal;
       transition: background 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
     #ghostbot-actions button:hover {
