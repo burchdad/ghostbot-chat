@@ -329,16 +329,17 @@
       const url = prompt('Enter your website URL to scan:');
       if (url) {
         appendMessage('user', `Scan my website: ${url}`);
+        appendMessage('bot', '🔎 Scanning your website, please wait...');
         scanSite(url).then(res => {
           if (res.markdownAudit) {
             appendMessage('bot', `<pre style="white-space:pre-wrap;">${res.markdownAudit}</pre>`);
           } else if (res.error) {
-            appendMessage('bot', `Error: ${res.error}`);
+            appendMessage('bot', `❌ Error: ${res.error}`);
           } else {
             appendMessage('bot', 'Website scan complete, but no audit was returned.');
           }
         }).catch(() => {
-          appendMessage('bot', 'Sorry, there was a problem scanning your website.');
+          appendMessage('bot', '❌ Sorry, there was a problem scanning your website.');
         });
       }
     }
