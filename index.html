@@ -131,10 +131,13 @@
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const isEmbed = params.get("embed") === "1" || params.get("mode") === "embed";
+    const isEmbed = params.get("embed") === "1" || params.get("mode") === "embed" || params.get("minimal") === "1";
     const theme = params.get("theme") || "dark";
     document.documentElement.dataset.theme = theme;
-    if (isEmbed) document.documentElement.classList.add("embed");
+    if (isEmbed) {
+      document.documentElement.classList.add("embed");
+      document.body.classList.add("embed");
+    }
 
     let chat_history = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
     let lead = { name: "", email: "", interest: "" };
