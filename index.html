@@ -152,16 +152,15 @@
   <div id="ghostbot-widget">
     <div id="ghostbot-header">Ghostbot 💬</div>
     <div id="ghostbot-chatbox"></div>
+    <div id="ghostbot-actions" style="margin-bottom: 10px;">
+      <button onclick="promptScanWebsite()">Scan Website</button>
+      <button onclick="promptGeneratePDF()">Generate PDF</button>
+    </div>
     <div id="ghostbot-input">
       <input type="file" id="ghostbot-attachment" style="display:none" />
       <button id="ghostbot-attach-btn" title="Attach file" onclick="document.getElementById('ghostbot-attachment').click()">📎</button>
       <input type="text" id="ghostbot-userInput" placeholder="Ask Ghostbot anything..." onkeydown="handleKey(event)" />
       <button onclick="ghostbotSendMessage()">Send</button>
-    </div>
-    <div id="ghostbot-actions">
-      <button onclick="startConversation()">Start Conversation</button>
-      <button onclick="promptScanWebsite()">Scan Website</button>
-      <button onclick="promptGeneratePDF()">Generate PDF</button>
     </div>
   </div>
 
@@ -379,11 +378,32 @@
     }
 
     function promptGeneratePDF() {
+      const btn = document.querySelector('#ghostbot-actions button[onclick="promptGeneratePDF()"]');
       const leadId = prompt('Enter Lead ID for PDF:');
       if (leadId) {
+        btn.textContent = "Generating PDF...";
+        btn.disabled = true;
         appendMessage('user', `Generate PDF for Lead: ${leadId}`);
         generatePDF({ leadId }).then(res => {
-          appendMessage('bot', res.message || 'PDF generated.');
+          btn.textContent = "Generate PDF";
+          btn.disabled = false;
+          if (res.pdfUrl && res.jsonUrl) {
+            appendMessage('bot', `
+              <b>Download your documents:</b><br>
+              <a href="${res.pdfUrl}" target="_blank">📄 PDF Audit</a><br>
+              <a href="${res.jsonUrl}" target="_blank">🗂 JSON Findings</a>
+            `);
+          }
+          if (res.emailSent) {
+            appendMessage('bot', '✅ Audit documents have also been emailed to you.');
+          }
+          if (res.driveFolderUrl) {
+            appendMessage('bot', `📁 Files are stored in your Google Drive folder: <a href="${res.driveFolderUrl}" target="_blank">View Folder</a>`);
+          }
+        }).catch(() => {
+          btn.textContent = "Generate PDF";
+          btn.disabled = false;
+          appendMessage('bot', '❌ Sorry, there was a problem generating your PDF.');
         });
       }
     }
