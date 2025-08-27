@@ -116,6 +116,23 @@
       display: inline-block;
       cursor: pointer;
     }
+
+    #ghostbot-actions {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+    }
+
+    #ghostbot-actions button {
+      flex: 1;
+      margin: 0 5px;
+      padding: 10px;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -124,8 +141,17 @@
     <div id="ghostbot-header">Ghostbot 💬</div>
     <div id="ghostbot-chatbox"></div>
     <div id="ghostbot-input">
+      <input type="file" id="ghostbot-attachment" style="display:none" />
+      <button id="ghostbot-attach-btn" title="Attach file" onclick="document.getElementById('ghostbot-attachment').click()">📎</button>
       <input type="text" id="ghostbot-userInput" placeholder="Ask Ghostbot anything..." onkeydown="handleKey(event)" />
       <button onclick="ghostbotSendMessage()">Send</button>
+    </div>
+    <div id="ghostbot-actions">
+      <button onclick="startConversation()">Start Conversation</button>
+      <button onclick="promptScanWebsite()">Scan Website</button>
+      <button onclick="promptGeneratePDF()">Generate PDF</button>
+      <button onclick="promptSaveAudit()">Save Audit to Drive</button>
+      <button onclick="promptTrackBot()">Track Bot</button>
     </div>
   </div>
 
@@ -272,6 +298,94 @@
       } catch (err) {
         appendMessage("bot", "Oops! Something went wrong. Please try again later.");
         console.error("Ghostbot Error:", err);
+      }
+    }
+
+    document.getElementById('ghostbot-attachment').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        appendMessage('user', `📎 Attached: ${file.name}`);
+        // TODO: send file to backend API here
+      }
+    });
+
+    function startConversation() {
+      appendMessage('bot', 'Welcome! You can ask me to scan your website, generate a PDF, or get an audit.');
+    }
+
+    function promptScanWebsite() {
+      const url = prompt('Enter your website URL to scan:');
+      if (url) {
+        appendMessage('user', `Scan my website: ${url}`);
+        // TODO: call scan API here
+        // Example: scanWebsite(url);
+      }
+    }
+
+    async function scanSite(url) {
+      const res = await fetch("/api/scan-site", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+      });
+      return res.json();
+    }
+
+    async function generatePDF(data) {
+      const res = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      return res.json();
+    }
+
+    async function saveAuditToDrive(auditId) {
+      const res = await fetch("/api/save-audit-drive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auditId })
+      });
+      return res.json();
+    }
+
+    async function trackBot(event, details) {
+      const res = await fetch("/api/track-bot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event, details })
+      });
+      return res.json();
+    }
+
+    function promptGeneratePDF() {
+      const leadId = prompt('Enter Lead ID for PDF:');
+      if (leadId) {
+        appendMessage('user', `Generate PDF for Lead: ${leadId}`);
+        generatePDF({ leadId }).then(res => {
+          appendMessage('bot', res.message || 'PDF generated.');
+        });
+      }
+    }
+
+    function promptSaveAudit() {
+      const auditId = prompt('Enter Audit ID to save:');
+      if (auditId) {
+        appendMessage('user', `Save audit to Drive: ${auditId}`);
+        saveAuditToDrive(auditId).then(res => {
+          appendMessage('bot', res.message || 'Audit saved to Drive.');
+        });
+      }
+    }
+
+    function promptTrackBot() {
+      const event = prompt('Enter event name to track:');
+      const details = prompt('Enter event details:");
+      if (event && details) {
+        appendMessage('user', `Track bot event: ${event} - ${details}`);
+        trackBot(event, details).then(res => {
+          appendMessage('bot', res.message || 'Bot event tracked.');
+        });
       }
     }
 
